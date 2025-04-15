@@ -8,23 +8,16 @@ public partial class MainViewModel : ObservableObject
 {
     public enum Mode
     {
-        [Description("Disabled")]
-        None,
-
-        [Description("Row/Boat Mode")]
-        Row,
-
-        [Description("Mining Mode")]
-        Mine
+        [Description("Disabled")] None,
+        [Description("Row/Boat Mode")] Row,
+        [Description("Mining Mode")] Mine
     }
-
 
     [ObservableProperty] private string _message = string.Empty;
     [ObservableProperty] private Brush _backgroundColor = Brushes.GreenYellow;
     [ObservableProperty] private bool _isStarted = false;
     [ObservableProperty] private bool _canStart = false;
     [ObservableProperty] private Mode _selectedMode = Mode.None;
-
 
     public MainViewModel() {}
 
