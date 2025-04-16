@@ -47,14 +47,14 @@
                               SelectedValuePath="Value" 
                               DisplayMemberPath="Description" 
                               SelectedValue="{Binding SelectedMode}"
-                              IsEnabled="{Binding IsStarted, Converter={StaticResource BooleanInverterConverter}}"
+                              IsEnabled="{Binding ModeSelectionEnabled}"
                               Padding="15 5"/>
                 </StackPanel>
 
                 <!-- Start Stop -->
                 <StackPanel Grid.Row="4">
-                    <Button Content="Start (F6)" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" FontSize="16" Padding="5"/>
-                    <Button Content="Stop (F6)" Command="{Binding StopCommand}" Margin="0 20 0 00" IsEnabled="{Binding IsStarted}"  FontSize="16" Padding="5"/>
+                    <Button Content="Start (F6)" Command="{Binding StartStopCommand}" IsEnabled="{Binding StartButtonEnabled}" FontSize="16" Padding="5"/>
+                    <Button Content="Stop (F6)" Command="{Binding StartStopCommand}" Margin="0 20 0 00" IsEnabled="{Binding StopButtonEnabled}"  FontSize="16" Padding="5"/>
                 </StackPanel>
 
                 <!-- Message -->

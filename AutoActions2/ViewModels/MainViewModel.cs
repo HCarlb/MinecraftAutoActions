@@ -1,8 +1,6 @@
 using AutoActions2.Services;
 using System.ComponentModel;
-using System.Data;
 using System.Reflection;
-using System.Windows.Automation;
 using System.Windows.Input;
 
 namespace AutoActions2.ViewModels;
@@ -15,99 +13,65 @@ public partial class MainViewModel : ObservableObject, IDisposable
         [Description("Row/Boat Mode")] Row,
         [Description("Mining Mode")] Mine
     }
+    public Brush DefaultBackgroundColor { get;  } = Brushes.LightGray;
 
     [ObservableProperty] private string _message = string.Empty;
-    [ObservableProperty] private Brush _backgroundColor = Brushes.GreenYellow;
-    [ObservableProperty] private bool _isStarted = false;
-    [ObservableProperty] private bool _canStart = false;
-    [ObservableProperty] private Mode _selectedMode = Mode.None;
-    private IKeyboardService _keyboardService;
-    private IInputService _inputService;
+    [ObservableProperty] private Brush _backgroundColor = Brushes.Gray;
+    [ObservableProperty] private bool _startButtonEnabled;
+    [ObservableProperty] private bool _stopButtonEnabled;
+    [ObservableProperty] private bool _modeSelectionEnabled = true;
+    [ObservableProperty] private Mode _selectedMode;
 
+    private IKeyboardService _keyboardService;
+    private readonly StateMachine _stateMachine;
+    private readonly IState _disabledState;
+    private readonly IState _rowState;
+    private readonly IState _miningState;
     public MainViewModel() 
     {
         _keyboardService = new KeyboardService(Key.F6);
         _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
 
-        _inputService = new InputService();
+
+        // Initialize the state machine and states
+        _stateMachine = new StateMachine();
+        _disabledState = new DisabledState(this);
+        _rowState = new RowState(this);
+        _miningState = new MiningState(this);
+        _stateMachine.ChangeState(_disabledState);
     }
     
     private void OnFunctionKeyPressed(object? sender, EventArgs e)
     {
-        ToggleStartStop();
-    }
-
-    private void ToggleStartStop()
-    {
-        if (SelectedMode==Mode.None) return;
-
-        if (IsStarted)
-        {
-            Stop();
-            return;
-        }            
-
-        Start();
+        StartStop();
     }
 
     [RelayCommand]
-    private void Stop()
+    private void StartStop()
     {
-        IsStarted = false;
-        _inputService.ReleaseAll();
+        _stateMachine.HandleFunctionKeyPress();
     }
 
-    [RelayCommand]
-    private void Start()
+    public void Dispose()
     {
-        IsStarted = true;
-
-        if (SelectedMode == Mode.Row)
-        {
-            _inputService.PressKey(Key.W);
-        }
-        else if (SelectedMode == Mode.Mine)
-        {
-            _inputService.PressMouse(MouseButton.Left);
-            _inputService.PressKey(Key.W);
-            _inputService.PressKey(Key.LeftShift);
-        }
+        _keyboardService.FunctionKeyPressed -= OnFunctionKeyPressed;
+        _keyboardService.Dispose();
     }
-
-    partial void OnIsStartedChanged(bool value)
-    {
-        CanStart =  SelectedMode != Mode.None && !IsStarted;
-        BackgroundColor = IsStarted ? Brushes.Red : Brushes.GreenYellow;
-
-    }
-
-
 
     partial void OnSelectedModeChanged(Mode value)
     {
         switch (value)
         {
             case Mode.Row:
-                Message = "Row mode selected. W key will be enabled.";
-                CanStart = true;
+                _stateMachine.ChangeState(_rowState);
                 break;
-
             case Mode.Mine:
-                Message = "Mine mode selected. LShift + W keys will be enabled together with left mouse button.";
-                CanStart = true;
+                _stateMachine.ChangeState(_miningState);
                 break;
-
             default:
-                Message = "Please select a mode";
-                CanStart = false;
+                _stateMachine.ChangeState(_disabledState);
                 break;
         }
-    }
-    public void Dispose()
-    {
-        _inputService.ReleaseAll();
-        _keyboardService.FunctionKeyPressed -= OnFunctionKeyPressed;
-        _keyboardService.Dispose();
     }
 
     /// <summary>

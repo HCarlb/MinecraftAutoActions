@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 
@@ -56,7 +57,10 @@ public class InputService : IInputService
     private struct KEYBDINPUT
     {
         public ushort wVk;
+        public ushort wScan;
         public KeyEventFlags dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
     }
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -75,6 +79,9 @@ public class InputService : IInputService
         if (!_pressedKeys.Contains(key))
         {
             _pressedKeys.Add(key);
+            ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
+            Debug.WriteLine($"Virtual key for {key}: {virtualKey}");
+
             var input = new INPUT
             {
                 type = InputType.Keyboard,
@@ -82,13 +89,25 @@ public class InputService : IInputService
                 {
                     ki = new KEYBDINPUT
                     {
-                        wVk = (ushort)KeyInterop.VirtualKeyFromKey(key),
-                        dwFlags = KeyEventFlags.KeyDown
+                        wVk = virtualKey,
+                        wScan = 0,
+                        dwFlags = KeyEventFlags.KeyDown,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
                     }
                 }
             };
 
-            SendInputEvent(input);
+            var result = SendInput(1, new[] { input }, Marshal.SizeOf(typeof(INPUT)));
+            if (result == 0)
+            {
+                var errorCode = Marshal.GetLastWin32Error();
+                Debug.WriteLine($"SendInput failed with error code: {errorCode}");
+            }
+            else
+            {
+                Debug.WriteLine($"Key {key} pressed successfully.");
+            }
         }
     }
 
