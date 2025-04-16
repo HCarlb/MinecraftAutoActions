@@ -1,10 +1,13 @@
+using AutoActions2.Services;
 using System.ComponentModel;
 using System.Data;
 using System.Reflection;
+using System.Windows.Automation;
+using System.Windows.Input;
 
 namespace AutoActions2.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     public enum Mode
     {
@@ -18,8 +21,31 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isStarted = false;
     [ObservableProperty] private bool _canStart = false;
     [ObservableProperty] private Mode _selectedMode = Mode.None;
+    private KeyboardService _keyboardService;
 
-    public MainViewModel() {}
+    public MainViewModel() 
+    {
+        _keyboardService = new KeyboardService(Key.F6);
+        _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
+    }
+
+    private void OnFunctionKeyPressed(object? sender, EventArgs e)
+    {
+        ToggleStartStop();
+    }
+
+    private void ToggleStartStop()
+    {
+        if (SelectedMode==Mode.None) return;
+
+        if (IsStarted)
+        {
+            Stop();
+            return;
+        }            
+
+        Start();
+    }
 
     [RelayCommand]
     private void Stop()
@@ -37,8 +63,10 @@ public partial class MainViewModel : ObservableObject
     {
         CanStart =  SelectedMode != Mode.None && !IsStarted;
         BackgroundColor = IsStarted ? Brushes.Red : Brushes.GreenYellow;
-        //Message = IsStarted ? "Started" : "Stopped";
+
     }
+
+
 
     partial void OnSelectedModeChanged(Mode value)
     {
@@ -60,7 +88,11 @@ public partial class MainViewModel : ObservableObject
                 break;
         }
     }
-
+    public void Dispose()
+    {
+        _keyboardService.FunctionKeyPressed -= OnFunctionKeyPressed;
+        _keyboardService.Dispose();
+    }
 
     /// <summary>
     /// Gets the list of mode values with their descriptions to be used by the ComboBox in ViewModel.
