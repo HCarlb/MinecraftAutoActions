@@ -21,14 +21,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isStarted = false;
     [ObservableProperty] private bool _canStart = false;
     [ObservableProperty] private Mode _selectedMode = Mode.None;
-    private KeyboardService _keyboardService;
+    private IKeyboardService _keyboardService;
+    private IInputService _inputService;
 
     public MainViewModel() 
     {
         _keyboardService = new KeyboardService(Key.F6);
         _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
-    }
 
+        _inputService = new InputService();
+    }
+    
     private void OnFunctionKeyPressed(object? sender, EventArgs e)
     {
         ToggleStartStop();
@@ -51,12 +54,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void Stop()
     {
         IsStarted = false;
+        _inputService.ReleaseAll();
     }
 
     [RelayCommand]
     private void Start()
     {
         IsStarted = true;
+
+        if (SelectedMode == Mode.Row)
+        {
+            _inputService.PressKey(Key.W);
+        }
+        else if (SelectedMode == Mode.Mine)
+        {
+            _inputService.PressMouse(MouseButton.Left);
+            _inputService.PressKey(Key.W);
+            _inputService.PressKey(Key.LeftShift);
+        }
     }
 
     partial void OnIsStartedChanged(bool value)
@@ -90,6 +105,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
     public void Dispose()
     {
+        _inputService.ReleaseAll();
         _keyboardService.FunctionKeyPressed -= OnFunctionKeyPressed;
         _keyboardService.Dispose();
     }

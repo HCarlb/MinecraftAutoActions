@@ -5,7 +5,7 @@ using System.Windows.Input;
 
 namespace AutoActions2.Services;
 
-public class KeyboardService : IDisposable
+public class KeyboardService : IKeyboardService
 {
     private const int WH_KEYBOARD_LL = 13; // Low-level keyboard hook for global keyboard events
     private const int WM_KEYDOWN = 0x0100; // Key down message for global keyboard events that are not specific to a window
