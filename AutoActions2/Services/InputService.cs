@@ -1,18 +1,18 @@
-using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 
 namespace AutoActions2.Services;
 
-public class InputService : IInputService
+public partial class InputService : IInputService
 {
+    private readonly List<Key> _pressedKeys = new();
+    private readonly List<MouseButton> _pressedMouseButtons = new();
+
     [Flags]
-    private enum InputType : uint
+    private enum KeyEventFlags : uint
     {
-        Mouse = 0,
-        Keyboard = 1,
-        Hardware = 2
+        KeyDown = 0x0000,
+        KeyUp = 0x0002 // Flag for key release
     }
 
     [Flags]
@@ -26,165 +26,46 @@ public class InputService : IInputService
         MiddleUp = 0x0040
     }
 
-    [Flags]
-    private enum KeyEventFlags : uint
-    {
-        KeyDown = 0x0000,
-        KeyUp = 0x0002
-    }
+    #region Dll Imports
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
-        public InputType type;
-        public InputUnion u;
-    }
+    //[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    //private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)] public MOUSEINPUT mi;
-        [FieldOffset(0)] public KEYBDINPUT ki;
-    }
+    //[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    //private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MOUSEINPUT
-    {
-        public uint dwFlags;
-    }
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    private static partial void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT
-    {
-        public ushort wVk;
-        public ushort wScan;
-        public KeyEventFlags dwFlags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    private static partial void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs, int cbSize);
 
-    private readonly List<Key> _pressedKeys = new();
-    private readonly List<MouseButton> _pressedMouseButtons = new();
-
-    private void SendInputEvent(INPUT input)
-    {
-        SendInput(1, new[] { input }, Marshal.SizeOf(typeof(INPUT)));
-    }
+    #endregion Dll Imports
 
     public void PressKey(Key key)
     {
-        if (!_pressedKeys.Contains(key))
-        {
-            _pressedKeys.Add(key);
-            ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
-            Debug.WriteLine($"Virtual key for {key}: {virtualKey}");
+        if (_pressedKeys.Contains(key)) return; // Key is already pressed
 
-            var input = new INPUT
-            {
-                type = InputType.Keyboard,
-                u = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = virtualKey,
-                        wScan = 0,
-                        dwFlags = KeyEventFlags.KeyDown,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            };
+        // Convert WPF Key to Virtual-Key code
+        int virtualKey = KeyInterop.VirtualKeyFromKey(key);
 
-            var result = SendInput(1, new[] { input }, Marshal.SizeOf(typeof(INPUT)));
-            if (result == 0)
-            {
-                var errorCode = Marshal.GetLastWin32Error();
-                Debug.WriteLine($"SendInput failed with error code: {errorCode}");
-            }
-            else
-            {
-                Debug.WriteLine($"Key {key} pressed successfully.");
-            }
-        }
-    }
+        // Simulate key press using WinAPI
+        //keybd_event((byte)virtualKey, 0, 0, 0);
+        TriggerKeyboardEvent(virtualKey, KeyEventFlags.KeyDown);
 
-    public void ReleaseKey(Key key)
-    {
-        if (_pressedKeys.Contains(key))
-        {
-            _pressedKeys.Remove(key);
-            var input = new INPUT
-            {
-                type = InputType.Keyboard,
-                u = new InputUnion
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = (ushort)KeyInterop.VirtualKeyFromKey(key),
-                        dwFlags = KeyEventFlags.KeyUp
-                    }
-                }
-            };
-
-            SendInputEvent(input);
-        }
+        _pressedKeys.Add(key);
     }
 
     public void PressMouse(MouseButton button)
     {
-        if (!_pressedMouseButtons.Contains(button))
-        {
-            _pressedMouseButtons.Add(button);
-            var input = new INPUT
-            {
-                type = InputType.Mouse,
-                u = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = button switch
-                        {
-                            MouseButton.Left => (uint)MouseEventFlags.LeftDown,
-                            MouseButton.Right => (uint)MouseEventFlags.RightDown,
-                            MouseButton.Middle => (uint)MouseEventFlags.MiddleDown,
-                            _ => throw new ArgumentOutOfRangeException(nameof(button), button, null)
-                        }
-                    }
-                }
-            };
+        if (_pressedMouseButtons.Contains(button)) return; // Button is already pressed
 
-            SendInputEvent(input);
-        }
-    }
+        var mouseEvent = GetMouseEventFlag(button, isPressed: true);
+        if (mouseEvent == 0) return; // Invalid button
 
-    public void ReleaseMouse(MouseButton button)
-    {
-        if (_pressedMouseButtons.Contains(button))
-        {
-            _pressedMouseButtons.Remove(button);
-            var input = new INPUT
-            {
-                type = InputType.Mouse,
-                u = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = button switch
-                        {
-                            MouseButton.Left => (uint)MouseEventFlags.LeftUp,
-                            MouseButton.Right => (uint)MouseEventFlags.RightUp,
-                            MouseButton.Middle => (uint)MouseEventFlags.MiddleUp,
-                            _ => throw new ArgumentOutOfRangeException(nameof(button), button, null)
-                        }
-                    }
-                }
-            };
-
-            SendInputEvent(input);
-        }
+        TriggerMouseEvent(mouseEvent);
+        _pressedMouseButtons.Add(button);
     }
 
     public void ReleaseAll()
@@ -198,5 +79,48 @@ public class InputService : IInputService
         {
             ReleaseMouse(button);
         }
+    }
+
+    public void ReleaseKey(Key key)
+    {
+        if (!_pressedKeys.Contains(key)) return; // Key is not pressed
+
+        // Convert WPF Key to Virtual-Key code
+        int virtualKey = KeyInterop.VirtualKeyFromKey(key);
+
+        // Simulate key release using WinAPI
+        TriggerKeyboardEvent(virtualKey, KeyEventFlags.KeyUp);
+
+        _pressedKeys.Remove(key);
+    }
+    public void ReleaseMouse(MouseButton button)
+    {
+        if (!_pressedMouseButtons.Contains(button)) return; // Button is not pressed
+
+        var mouseEvent = GetMouseEventFlag(button, isPressed: false);
+        if (mouseEvent == 0) return; // Invalid button
+
+        TriggerMouseEvent(mouseEvent);
+        _pressedMouseButtons.Remove(button);
+    }
+    private static uint GetMouseEventFlag(MouseButton button, bool isPressed)
+    {
+        return button switch
+        {
+            MouseButton.Left => isPressed ? (uint)MouseEventFlags.LeftDown : (uint)MouseEventFlags.LeftUp,
+            MouseButton.Middle => isPressed ? (uint)MouseEventFlags.MiddleDown : (uint)MouseEventFlags.MiddleUp,
+            MouseButton.Right => isPressed ? (uint)MouseEventFlags.RightDown : (uint)MouseEventFlags.RightUp,
+            _ => 0 // Invalid button
+        };
+    }
+
+    private static void TriggerKeyboardEvent(int virtualKey, KeyEventFlags keyEventFlag)
+    {
+        keybd_event((byte)virtualKey, 0, (uint)keyEventFlag, UIntPtr.Zero);
+    }
+
+    private static void TriggerMouseEvent(uint mouseEvent)
+    {
+        mouse_event(mouseEvent, 0, 0, 0, UIntPtr.Zero);
     }
 }
