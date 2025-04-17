@@ -28,7 +28,6 @@
                 <StackPanel Grid.Row="0">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="Auto Actions 2025" FontSize="32" FontWeight="Bold" />
-                        <TextBlock Text="by Henrik Carlberg 2025" FontStyle="Italic" FontSize="10" TextAlignment="Right"  />
                     </StackPanel>
                 </StackPanel>
 
