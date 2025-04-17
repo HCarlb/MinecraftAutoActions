@@ -1,4 +1,6 @@
-public class StateMachine
+namespace AutoActions2.Services.StateMachine;
+
+public class GameModeStateMachine : IGameModeStateMachine
 {
     private IState? _currentState;
 

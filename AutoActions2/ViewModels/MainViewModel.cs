@@ -1,7 +1,5 @@
-using AutoActions2.Services;
 using System.ComponentModel;
 using System.Reflection;
-using System.Windows.Input;
 
 namespace AutoActions2.ViewModels;
 
@@ -10,8 +8,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public enum Mode
     {
         [Description("Disabled")] None,
-        [Description("Row/Boat Mode")] Row,
-        [Description("Mining Mode")] Mine
+        [Description("Walk/BoatRow-Mode")] Row,
+        [Description("Crouch-Walk-Mining Mode")] Mine,
+        [Description("Mouse Mining Mode")] StaticMine,
     }
     public Brush DefaultBackgroundColor { get;  } = Brushes.LightGray;
 
@@ -23,22 +22,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private Mode _selectedMode;
 
     private IKeyboardService _keyboardService;
-    private readonly StateMachine _stateMachine;
-    private readonly IState _disabledState;
-    private readonly IState _rowState;
-    private readonly IState _miningState;
-    public MainViewModel() 
+    private readonly IGameModeStateMachine _stateMachine;
+    private readonly IStateFactory _stateFactory;
+
+    public MainViewModel(IKeyboardService keyboardService, IGameModeStateMachine stateMachine,IStateFactory stateFactory)
     {
-        _keyboardService = new KeyboardService(Key.F6);
+        _keyboardService = keyboardService;
+        _stateMachine = stateMachine;
+        _stateFactory = stateFactory;
         _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
-
-
-        // Initialize the state machine and states
-        _stateMachine = new StateMachine();
-        _disabledState = new DisabledState(this);
-        _rowState = new RowState(this);
-        _miningState = new MiningState(this);
-        _stateMachine.ChangeState(_disabledState);
     }
     
     private void OnFunctionKeyPressed(object? sender, EventArgs e)
@@ -58,20 +50,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _keyboardService.Dispose();
     }
 
-    partial void OnSelectedModeChanged(Mode value)
+    partial void OnSelectedModeChanged(Mode value) // value = New Mode
     {
-        switch (value)
+        var state = GetStateByModeFromFactory(value);
+        _stateMachine.ChangeState(state);
+    }
+
+    private IState GetStateByModeFromFactory(Mode mode)
+    {
+        return mode switch
         {
-            case Mode.Row:
-                _stateMachine.ChangeState(_rowState);
-                break;
-            case Mode.Mine:
-                _stateMachine.ChangeState(_miningState);
-                break;
-            default:
-                _stateMachine.ChangeState(_disabledState);
-                break;
-        }
+            Mode.Row => _stateFactory.CreateRowState(),
+            Mode.Mine => _stateFactory.CreateMiningState(),
+            Mode.StaticMine => _stateFactory.CreateStaticMiningState(),
+            _ => _stateFactory.CreateDisabledState(),
+        };
     }
 
     /// <summary>
