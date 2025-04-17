@@ -48,7 +48,8 @@
                               DisplayMemberPath="Description" 
                               SelectedValue="{Binding SelectedMode}"
                               IsEnabled="{Binding ModeSelectionEnabled}"
-                              Padding="15 5"/>
+                              Padding="15 5" 
+                              Focusable="False"/>
                 </StackPanel>
 
                 <!-- Start Stop -->

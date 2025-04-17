@@ -9,3 +9,6 @@ global using System.Windows;
 global using System.Windows.Media;
 global using AutoActions2.ViewModels;
 global using AutoActions2.Services;
+global using AutoActions2.StateMachine;
+global using AutoActions2.StateMachine.Abstractions;
+global using AutoActions2.StateMachine.States;

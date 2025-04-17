@@ -1,4 +1,3 @@
-using AutoActions2.Services;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Input;
@@ -10,8 +9,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public enum Mode
     {
         [Description("Disabled")] None,
-        [Description("Row/Boat Mode")] Row,
-        [Description("Mining Mode")] Mine
+        [Description("Walk/BoatRow-Mode")] Row,
+        [Description("Crouch-Walk-Mining Mode")] Mine,
+        [Description("Mouse Mining Mode")] StaticMine,
     }
     public Brush DefaultBackgroundColor { get;  } = Brushes.LightGray;
 
@@ -23,10 +23,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private Mode _selectedMode;
 
     private IKeyboardService _keyboardService;
-    private readonly StateMachine _stateMachine;
+    private readonly IGameModeStateMachine _stateMachine;
     private readonly IState _disabledState;
     private readonly IState _rowState;
     private readonly IState _miningState;
+    private readonly IState _staticMiningState;
+
     public MainViewModel() 
     {
         _keyboardService = new KeyboardService(Key.F6);
@@ -34,10 +36,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
 
         // Initialize the state machine and states
-        _stateMachine = new StateMachine();
+        _stateMachine = new GameModeStateMachine();
         _disabledState = new DisabledState(this);
         _rowState = new RowState(this);
         _miningState = new MiningState(this);
+        _staticMiningState = new StaticMiningState(this);
         _stateMachine.ChangeState(_disabledState);
     }
     
@@ -67,6 +70,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 break;
             case Mode.Mine:
                 _stateMachine.ChangeState(_miningState);
+                break;
+            case Mode.StaticMine:
+                _stateMachine.ChangeState(_staticMiningState);
                 break;
             default:
                 _stateMachine.ChangeState(_disabledState);
