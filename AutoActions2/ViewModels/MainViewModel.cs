@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Reflection;
-using System.Windows.Input;
 
 namespace AutoActions2.ViewModels;
 
@@ -24,24 +23,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private IKeyboardService _keyboardService;
     private readonly IGameModeStateMachine _stateMachine;
-    private readonly IState _disabledState;
-    private readonly IState _rowState;
-    private readonly IState _miningState;
-    private readonly IState _staticMiningState;
+    private readonly IStateFactory _stateFactory;
 
-    public MainViewModel() 
+    public MainViewModel(IKeyboardService keyboardService, IGameModeStateMachine stateMachine,IStateFactory stateFactory)
     {
-        _keyboardService = new KeyboardService(Key.F6);
+        _keyboardService = keyboardService;
+        _stateMachine = stateMachine;
+        _stateFactory = stateFactory;
         _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
-
-
-        // Initialize the state machine and states
-        _stateMachine = new GameModeStateMachine();
-        _disabledState = new DisabledState(this);
-        _rowState = new RowState(this);
-        _miningState = new MiningState(this);
-        _staticMiningState = new StaticMiningState(this);
-        _stateMachine.ChangeState(_disabledState);
     }
     
     private void OnFunctionKeyPressed(object? sender, EventArgs e)
@@ -61,23 +50,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _keyboardService.Dispose();
     }
 
-    partial void OnSelectedModeChanged(Mode value)
+    partial void OnSelectedModeChanged(Mode value) // value = New Mode
     {
-        switch (value)
+        var state = GetStateByModeFromFactory(value);
+        _stateMachine.ChangeState(state);
+    }
+
+    private IState GetStateByModeFromFactory(Mode mode)
+    {
+        return mode switch
         {
-            case Mode.Row:
-                _stateMachine.ChangeState(_rowState);
-                break;
-            case Mode.Mine:
-                _stateMachine.ChangeState(_miningState);
-                break;
-            case Mode.StaticMine:
-                _stateMachine.ChangeState(_staticMiningState);
-                break;
-            default:
-                _stateMachine.ChangeState(_disabledState);
-                break;
-        }
+            Mode.Row => _stateFactory.CreateRowState(),
+            Mode.Mine => _stateFactory.CreateMiningState(),
+            Mode.StaticMine => _stateFactory.CreateStaticMiningState(),
+            _ => _stateFactory.CreateDisabledState(),
+        };
     }
 
     /// <summary>

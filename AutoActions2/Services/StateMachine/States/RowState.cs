@@ -1,8 +1,9 @@
+using AutoActions2.Services.StateMachine.Abstractions;
 using System.Windows.Input;
 
-namespace AutoActions2.StateMachine.States;
+namespace AutoActions2.Services.StateMachine.States;
 
-public class RowState(MainViewModel viewModel) :  BaseState(viewModel)
+public class RowState(MainViewModel viewModel, IInputService inputService) : BaseState(viewModel, inputService)
 {
     public override void Enter()
     {
@@ -10,7 +11,6 @@ public class RowState(MainViewModel viewModel) :  BaseState(viewModel)
         ViewModel.StartButtonEnabled = true;
         ViewModel.StopButtonEnabled = false;
         ViewModel.ModeSelectionEnabled = true;
-        //ViewModel.SelectedMode = MainViewModel.Mode.Row;
     }
 
     public override void StartExecution()

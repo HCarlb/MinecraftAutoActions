@@ -1,8 +1,8 @@
 using System.Windows.Input;
 
-namespace AutoActions2.StateMachine.States;
+namespace AutoActions2.Services.StateMachine.States;
 
-public class MiningState(MainViewModel viewModel) : BaseState(viewModel)
+public class MiningState(MainViewModel viewModel, IInputService inputService) : BaseState(viewModel, inputService)
 {
     public override void Enter()
     {

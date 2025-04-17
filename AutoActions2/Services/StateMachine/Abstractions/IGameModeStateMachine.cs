@@ -1,4 +1,4 @@
-﻿namespace AutoActions2.StateMachine.Abstractions;
+﻿namespace AutoActions2.Services.StateMachine.Abstractions;
 
 public interface IGameModeStateMachine
 {

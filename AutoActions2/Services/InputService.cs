@@ -28,12 +28,6 @@ public partial class InputService : IInputService
 
     #region Dll Imports
 
-    //[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    //private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-
-    //[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    //private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
-
     [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     private static partial void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 

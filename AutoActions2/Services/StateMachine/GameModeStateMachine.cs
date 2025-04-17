@@ -1,6 +1,4 @@
-using AutoActions2.StateMachine.Abstractions;
-
-namespace AutoActions2.StateMachine;
+namespace AutoActions2.Services.StateMachine;
 
 public class GameModeStateMachine : IGameModeStateMachine
 {

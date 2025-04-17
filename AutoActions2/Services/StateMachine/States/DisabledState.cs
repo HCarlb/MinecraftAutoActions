@@ -1,8 +1,6 @@
-using AutoActions2.StateMachine.Abstractions;
+namespace AutoActions2.Services.StateMachine.States;
 
-namespace AutoActions2.StateMachine.States;
-
-public class DisabledState(MainViewModel viewModel) : BaseState(viewModel)
+public class DisabledState(MainViewModel viewModel, IInputService inputService) : BaseState(viewModel, inputService)
 {
     public override void Enter()
     {

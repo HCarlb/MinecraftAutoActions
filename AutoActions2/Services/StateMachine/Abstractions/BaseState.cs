@@ -1,14 +1,15 @@
-namespace AutoActions2.StateMachine.Abstractions;
+namespace AutoActions2.Services.StateMachine.Abstractions;
 
 public abstract class BaseState : IState
 {
     protected readonly MainViewModel ViewModel;
-    protected readonly InputService InputService = new();
+    protected readonly IInputService InputService;
     private bool _isRunning;
 
-    protected BaseState(MainViewModel viewModel)
+    protected BaseState(MainViewModel viewModel, IInputService inputService)
     {
         ViewModel = viewModel;
+        InputService = inputService;
     }
 
     public bool IsRunning => _isRunning;

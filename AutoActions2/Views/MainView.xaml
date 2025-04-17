@@ -1,37 +1,30 @@
-﻿<Window x:Class="AutoActions2.MainWindow"
+﻿<Window x:Class="AutoActions2.Views.MainView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:AutoActions2.ViewModels"
-        xmlns:conv="clr-namespace:AutoActions2.Converters"
         mc:Ignorable="d"
         Background="{Binding BackgroundColor}"
         ResizeMode="NoResize"
         Title="Minecraft Auto Actions 0.1b" Height="420" Width="420">
-
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
-
-    <Window.Resources>
-        <conv:BooleanInverterConverter x:Key="BooleanInverterConverter" />
-    </Window.Resources>
-
     <Grid>
         <WrapPanel Orientation="Vertical" Margin="20" Background="LightGray">
             <Grid Margin="30 10" Width="300">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="15" />     <!-- Title -->
+                    <RowDefinition Height="15" />
+                    <!-- Title -->
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="15" />
-                    <RowDefinition Height="Auto" />   <!-- Start Stop-->
+                    <RowDefinition Height="Auto" />
+                    <!-- Start Stop-->
                     <RowDefinition Height="15" />
-                    <RowDefinition Height="Auto" MaxHeight="90"/>   <!--Message area-->
+                    <RowDefinition Height="Auto" MaxHeight="90"/>
+                    <!--Message area-->
                 </Grid.RowDefinitions>
-                
-            <!-- Header -->
+
+                <!-- Header -->
                 <StackPanel Grid.Row="0">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="Auto Actions 2025" FontSize="32" FontWeight="Bold" />
@@ -64,7 +57,7 @@
                     <TextBlock Text="{Binding Message}"  Margin="10 5" TextWrapping="Wrap" FontSize="14"/>
                 </WrapPanel>
 
-                
+
             </Grid>
         </WrapPanel>
     </Grid>
