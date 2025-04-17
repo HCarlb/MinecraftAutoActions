@@ -1,50 +1,61 @@
+using AutoActions2.Services;
 using System.ComponentModel;
-using System.Data;
 using System.Reflection;
+using System.Windows.Input;
 
 namespace AutoActions2.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     public enum Mode
     {
-        [Description("Disabled")]
-        None,
-
-        [Description("Row/Boat Mode")]
-        Row,
-
-        [Description("Mining Mode")]
-        Mine
+        [Description("Disabled")] None,
+        [Description("Row/Boat Mode")] Row,
+        [Description("Mining Mode")] Mine
     }
-
+    public Brush DefaultBackgroundColor { get;  } = Brushes.LightGray;
 
     [ObservableProperty] private string _message = string.Empty;
-    [ObservableProperty] private Brush _backgroundColor = Brushes.GreenYellow;
-    [ObservableProperty] private bool _isStarted = false;
-    [ObservableProperty] private bool _canStart = false;
-    [ObservableProperty] private Mode _selectedMode = Mode.None;
+    [ObservableProperty] private Brush _backgroundColor = Brushes.Gray;
+    [ObservableProperty] private bool _startButtonEnabled;
+    [ObservableProperty] private bool _stopButtonEnabled;
+    [ObservableProperty] private bool _modeSelectionEnabled = true;
+    [ObservableProperty] private Mode _selectedMode;
 
-
-    public MainViewModel() {}
-
-    [RelayCommand]
-    private void Stop()
+    private IKeyboardService _keyboardService;
+    private readonly StateMachine _stateMachine;
+    private readonly IState _disabledState;
+    private readonly IState _rowState;
+    private readonly IState _miningState;
+    public MainViewModel() 
     {
-        IsStarted = false;
+        _keyboardService = new KeyboardService(Key.F6);
+        _keyboardService.FunctionKeyPressed += OnFunctionKeyPressed;
+
+
+        // Initialize the state machine and states
+        _stateMachine = new StateMachine();
+        _disabledState = new DisabledState(this);
+        _rowState = new RowState(this);
+        _miningState = new MiningState(this);
+        _stateMachine.ChangeState(_disabledState);
+    }
+    
+    private void OnFunctionKeyPressed(object? sender, EventArgs e)
+    {
+        StartStop();
     }
 
     [RelayCommand]
-    private void Start()
+    private void StartStop()
     {
-        IsStarted = true;
+        _stateMachine.HandleFunctionKeyPress();
     }
 
-    partial void OnIsStartedChanged(bool value)
+    public void Dispose()
     {
-        CanStart =  SelectedMode != Mode.None && !IsStarted;
-        BackgroundColor = IsStarted ? Brushes.Red : Brushes.GreenYellow;
-        //Message = IsStarted ? "Started" : "Stopped";
+        _keyboardService.FunctionKeyPressed -= OnFunctionKeyPressed;
+        _keyboardService.Dispose();
     }
 
     partial void OnSelectedModeChanged(Mode value)
@@ -52,22 +63,16 @@ public partial class MainViewModel : ObservableObject
         switch (value)
         {
             case Mode.Row:
-                Message = "Row mode selected. W key will be enabled.";
-                CanStart = true;
+                _stateMachine.ChangeState(_rowState);
                 break;
-
             case Mode.Mine:
-                Message = "Mine mode selected. LShift + W keys will be enabled together with left mouse button.";
-                CanStart = true;
+                _stateMachine.ChangeState(_miningState);
                 break;
-
             default:
-                Message = "Please select a mode";
-                CanStart = false;
+                _stateMachine.ChangeState(_disabledState);
                 break;
         }
     }
-
 
     /// <summary>
     /// Gets the list of mode values with their descriptions to be used by the ComboBox in ViewModel.

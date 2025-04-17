@@ -7,3 +7,5 @@ global using CommunityToolkit.Mvvm.ComponentModel;
 global using CommunityToolkit.Mvvm.Input;
 global using System.Windows;
 global using System.Windows.Media;
+global using AutoActions2.ViewModels;
+global using AutoActions2.Services;
